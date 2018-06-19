@@ -22,7 +22,6 @@ type Client struct {
 	conn      io.ReadWriteCloser
 	h         header
 	buf       bytes.Buffer
-	keepAlive bool
 }
 
 func New(host string, port int) (*Client, error) {
@@ -41,8 +40,7 @@ func New(host string, port int) (*Client, error) {
 	}
 
 	client := &Client{
-		conn:      conn,
-		keepAlive: false,
+		conn: conn,
 	}
 	return client, nil
 }
