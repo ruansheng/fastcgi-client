@@ -18,6 +18,7 @@ func (rec *record) read(r io.Reader) (err error) {
 	if rec.h.Version != 1 {
 		return errors.New("fastcgi: invalid header version")
 	}
+
 	n := int(rec.h.ContentLength) + int(rec.h.PaddingLength)
 	if _, err = io.ReadFull(r, rec.buf[:n]); err != nil {
 		return err

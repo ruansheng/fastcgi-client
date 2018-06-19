@@ -1,11 +1,11 @@
 package fastcgi
 
 const (
-	FCGI_BEGIN_REQUEST uint8 = iota + 1
-	FCGI_ABORT_REQUEST
-	FCGI_END_REQUEST
-	FCGI_PARAMS
-	FCGI_STDIN
+	FcgiBeginRequest uint8 = iota + 1
+	FCGI_ABORT_REQUEST  // 2
+	FCGI_END_REQUEST    // 3
+	FcgiParams          // 4
+	FcgiStdin			// 5
 	FCGI_STDOUT
 	FCGI_STDERR
 	FCGI_DATA

@@ -3,7 +3,6 @@ package fastcgi
 import (
 	"bufio"
 	"io"
-	"fmt"
 )
 
 type streamWriter struct {
@@ -19,7 +18,6 @@ func (sw *streamWriter)Write(p []byte) (int, error) {
 		if n > maxWrite {
 			n = maxWrite
 		}
-		fmt.Println(string(p[:n]))
 		if err := sw.c.writeRecord(sw.t, sw.requestId, p[:n]); err != nil {
 			return nn, err
 		}
@@ -40,7 +38,6 @@ type Buffer struct {
 }
 
 func (b *Buffer) Close() error {
-	fmt.Println("buffer close")
 	if err := b.Writer.Flush(); err != nil {
 		b.closer.Close()
 	}

@@ -4,6 +4,8 @@ import (
 	"fastcgi-client/fastcgi"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 )
 
 func main()  {
@@ -18,14 +20,15 @@ func main()  {
 	reqParams := "name=zhangsan"
 
 	env := make(map[string]string)
-	env["REQUEST_METHOD"] = "GET"
+	env["REQUEST_METHOD"] = "POST"
 	env["SCRIPT_FILENAME"] = "/usr/local/php7/test/index.php"
-	env["QUERY_STRING"] = reqParams
+	env["CONTENT_TYPE"] = "application/x-www-form-urlencoded"
+	env["CONTENT_LENGTH"] = strconv.Itoa(strings.Count(reqParams,"")-1)
 
-	content, err := client.Request(env, reqParams)
+	reponse, err := client.Request(env, reqParams)
 	if err != nil {
 		fmt.Printf("err: %v", err)
 	}
 
-	fmt.Printf("content: %s", content)
+	fmt.Println(reponse.GetContent())
 }

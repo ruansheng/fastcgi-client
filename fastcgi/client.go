@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"errors"
 	"encoding/binary"
-	"fmt"
 )
 
 var(
@@ -48,9 +47,9 @@ func New(host string, port int) (*Client, error) {
 	return client, nil
 }
 
-func (c *Client)writeBeginRequest(requestId uint16, role uint16, flags uint8) error {
+func (c *Client)writeBeginRequest(requestId uint16, t uint8, role uint16, flags uint8) error {
 	b := [8]byte{0, byte(role), flags}
-	return c.writeRecord(FCGI_BEGIN_REQUEST, requestId, b[:])
+	return c.writeRecord(t, requestId, b[:])
 }
 
 func (c *Client)writePairs(t uint8, requestId uint16, pairs map[string]string) error {
@@ -59,10 +58,6 @@ func (c *Client)writePairs(t uint8, requestId uint16, pairs map[string]string) e
 	for k, v := range pairs {
 		n := encodeSize(b, uint32(len(k)))
 		n += encodeSize(b[n:], uint32(len(v)))
-		fmt.Println(b)
-		//b[0] = byte(len(k))
-		//b[4] = byte(len(v))
-		//n := 8
 		if _,err := buffer.Write(b[:n]); err != nil {
 			return err
 		}
@@ -105,21 +100,24 @@ func (c *Client)writeRecord(t uint8, requestId uint16, content []byte) (error){
 	return err
 }
 
-func (c *Client) Request(env map[string]string, reqParams string) (ret []byte, err error){
+func (c *Client) Request(env map[string]string, reqParams string) (response *Response, err error){
 	var requestId uint16 = 1
 	var role uint16 = 1
-	err = c.writeBeginRequest(requestId, role, 0)
+	var flags uint8 = 0
+
+	err = c.writeBeginRequest(requestId, FcgiBeginRequest, role, flags)
 	if err != nil {
 		return
 	}
 
-	err = c.writePairs(FCGI_PARAMS, requestId, env)
+	err = c.writePairs(FcgiParams, requestId, env)
 	if err != nil {
 		return
 	}
 
+	// write post request data
 	if len(reqParams) > 0 {
-		err = c.writeRecord(FCGI_STDIN, requestId, []byte(reqParams))
+		err = c.writeRecord(FcgiStdin, requestId, []byte(reqParams))
 		if err != nil {
 			return
 		}
@@ -131,6 +129,18 @@ func (c *Client) Request(env map[string]string, reqParams string) (ret []byte, e
 		return
 	}
 
-	ret = rec.content()
-	return
+	ret := rec.content()
+
+	// parse php-fmt response ret
+	response, err = c.parseContent(string(ret))
+	return response, err
+}
+
+func (c *Client)parseContent(ret string) (*Response, error) {
+	response := &Response{}
+	_, err := response.Init(string(ret))
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
 }
