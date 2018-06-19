@@ -1,4 +1,4 @@
-package fastcgi
+package fastcgi_client
 
 // 8 byte
 type header struct {

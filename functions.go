@@ -1,4 +1,4 @@
-package fastcgi
+package fastcgi_client
 
 import (
 	"encoding/binary"
