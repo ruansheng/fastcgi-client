@@ -1,4 +1,4 @@
-package fastcgi_client
+package gofastcgi
 
 import (
 	"strings"

@@ -1,4 +1,4 @@
-package fastcgi_client
+package gofastcgi
 
 // 8 byte
 type header struct {
