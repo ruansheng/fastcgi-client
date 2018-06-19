@@ -15,7 +15,7 @@ type Response struct {
 	content string
 }
 
-func (r *Response)Init(data string) (bool, error) {
+func (r *Response)init(data string) (bool, error) {
 	rows := strings.Split(data, "\r\n\r\n")
 	if len(rows) != 2 {
 		return false, responseParseError

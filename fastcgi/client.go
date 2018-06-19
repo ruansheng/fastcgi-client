@@ -138,7 +138,7 @@ func (c *Client) Request(env map[string]string, reqParams string) (response *Res
 
 func (c *Client)parseContent(ret string) (*Response, error) {
 	response := &Response{}
-	_, err := response.Init(string(ret))
+	_, err := response.init(string(ret))
 	if err != nil {
 		return nil, err
 	}
