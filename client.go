@@ -24,7 +24,7 @@ type Client struct {
 	buf       bytes.Buffer
 }
 
-func New(host string, port int) (*Client, error) {
+func NewClient(host string, port int) (*Client, error) {
 	if host == "" {
 		return nil, hostEmptyError
 	}
