@@ -2,8 +2,9 @@ package gofastcgi
 
 const (
 	FcgiBeginRequest uint8 = 1
-	FcgiParams uint8 = 4
-	FcgiStdin uint8 = 5
+	FcgiEndRequest   uint8 = 3
+	FcgiParams       uint8 = 4
+	FcgiStdin        uint8 = 5
 )
 
 const (

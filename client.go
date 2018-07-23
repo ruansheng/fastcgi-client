@@ -1,16 +1,17 @@
 package gofastcgi
 
 import (
-	"sync"
-	"io"
 	"bytes"
+	"encoding/binary"
+	"errors"
+	"io"
 	"net"
 	"strconv"
-	"errors"
-	"encoding/binary"
+	"sync"
+	"time"
 )
 
-var(
+var (
 	hostEmptyError = errors.New("host is empty")
 	portEmptyError = errors.New("port is error")
 )
@@ -18,13 +19,15 @@ var(
 var pad [maxPad]byte
 
 type Client struct {
-	lock      sync.Mutex
-	conn      io.ReadWriteCloser
-	h         header
-	buf       bytes.Buffer
+	lock         sync.Mutex
+	keepAlive    bool // true: persistent connection
+	conn         io.ReadWriteCloser
+	h            header
+	buf          bytes.Buffer
+	activityTime time.Time
 }
 
-func NewClient(host string, port int) (*Client, error) {
+func NewClient(host string, port int, keepAlive bool) (*Client, error) {
 	if host == "" {
 		return nil, hostEmptyError
 	}
@@ -40,29 +43,39 @@ func NewClient(host string, port int) (*Client, error) {
 	}
 
 	client := &Client{
-		conn: conn,
+		keepAlive:    keepAlive,
+		conn:         conn,
+		activityTime: time.Now(),
 	}
 	return client, nil
 }
 
-func (c *Client)writeBeginRequest(requestId uint16, t uint8, role uint16, flags uint8) error {
+func (c *Client) GetActiveTime() time.Time {
+	return c.activityTime
+}
+
+func (c *Client) SetActiveTime() {
+	c.activityTime = time.Now()
+}
+
+func (c *Client) writeBeginRequest(requestId uint16, t uint8, role uint16, flags uint8) error {
 	b := [8]byte{0, byte(role), flags}
 	return c.writeRecord(t, requestId, b[:])
 }
 
-func (c *Client)writePairs(t uint8, requestId uint16, pairs map[string]string) error {
+func (c *Client) writePairs(t uint8, requestId uint16, pairs map[string]string) error {
 	buffer := newBuffer(c, t, requestId)
 	b := make([]byte, 8)
 	for k, v := range pairs {
 		n := encodeSize(b, uint32(len(k)))
 		n += encodeSize(b[n:], uint32(len(v)))
-		if _,err := buffer.Write(b[:n]); err != nil {
+		if _, err := buffer.Write(b[:n]); err != nil {
 			return err
 		}
-		if _,err := buffer.WriteString(k); err != nil {
+		if _, err := buffer.WriteString(k); err != nil {
 			return err
 		}
-		if _,err := buffer.WriteString(v); err != nil {
+		if _, err := buffer.WriteString(v); err != nil {
 			return err
 		}
 	}
@@ -70,7 +83,7 @@ func (c *Client)writePairs(t uint8, requestId uint16, pairs map[string]string) e
 	return nil
 }
 
-func (c *Client)writeRecord(t uint8, requestId uint16, content []byte) (error){
+func (c *Client) writeRecord(t uint8, requestId uint16, content []byte) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -98,10 +111,13 @@ func (c *Client)writeRecord(t uint8, requestId uint16, content []byte) (error){
 	return err
 }
 
-func (c *Client) Request(env map[string]string, reqParams string) (response *Response, err error){
+func (c *Client) Request(env map[string]string, reqParams string) (response *Response, err error) {
 	var requestId uint16 = 1
 	var role uint16 = 1
 	var flags uint8 = 0
+	if c.keepAlive {
+		flags = 1
+	}
 
 	err = c.writeBeginRequest(requestId, FcgiBeginRequest, role, flags)
 	if err != nil {
@@ -128,13 +144,27 @@ func (c *Client) Request(env map[string]string, reqParams string) (response *Res
 	}
 
 	ret := rec.content()
+	err = rec.readEnd(c.conn)
+	if err != nil {
+		return
+	}
 
 	// parse php-fmt response ret
 	response, err = c.parseContent(string(ret))
 	return response, err
 }
 
-func (c *Client)parseContent(ret string) (*Response, error) {
+func (c *Client) Reset() {
+	c.h = header{}
+	c.buf.Reset()
+}
+
+func (c *Client) Close() {
+	c.buf.Reset()
+	c.conn.Close()
+}
+
+func (c *Client) parseContent(ret string) (*Response, error) {
 	response := &Response{}
 	_, err := response.init(string(ret))
 	if err != nil {

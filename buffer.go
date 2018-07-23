@@ -6,12 +6,12 @@ import (
 )
 
 type streamWriter struct {
-	c *Client
-	t uint8
+	c         *Client
+	t         uint8
 	requestId uint16
 }
 
-func (sw *streamWriter)Write(p []byte) (int, error) {
+func (sw *streamWriter) Write(p []byte) (int, error) {
 	nn := 0
 	for len(p) > 0 {
 		n := len(p)
@@ -27,7 +27,7 @@ func (sw *streamWriter)Write(p []byte) (int, error) {
 	return nn, nil
 }
 
-func (sw *streamWriter)Close() error {
+func (sw *streamWriter) Close() error {
 	sw.c.writeRecord(sw.t, sw.requestId, nil)
 	return nil
 }
@@ -45,7 +45,7 @@ func (b *Buffer) Close() error {
 }
 
 func newBuffer(c *Client, t uint8, requestId uint16) *Buffer {
-	sw := &streamWriter{c:c, t:t, requestId:requestId}
+	sw := &streamWriter{c: c, t: t, requestId: requestId}
 	bw := bufio.NewWriterSize(sw, maxWrite)
 	return &Buffer{sw, bw}
 }

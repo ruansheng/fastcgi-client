@@ -1,21 +1,21 @@
 package gofastcgi
 
 import (
-	"strings"
 	"errors"
+	"strings"
 )
 
-var(
+var (
 	responseParseError = errors.New("response parse error")
 )
 
 type Response struct {
 	contentType string
-	xPoweredBy string
-	content string
+	xPoweredBy  string
+	content     string
 }
 
-func (r *Response)init(data string) (bool, error) {
+func (r *Response) init(data string) (bool, error) {
 	rows := strings.Split(data, "\r\n\r\n")
 	if len(rows) != 2 {
 		return false, responseParseError
@@ -40,15 +40,14 @@ func (r *Response)init(data string) (bool, error) {
 	return true, nil
 }
 
-func (r *Response)GetContentType() string {
+func (r *Response) GetContentType() string {
 	return r.contentType
 }
 
-func (r *Response)GetXPoweredBy() string {
+func (r *Response) GetXPoweredBy() string {
 	return r.xPoweredBy
 }
 
-func (r *Response)GetContent() string {
+func (r *Response) GetContent() string {
 	return r.content
 }
-
